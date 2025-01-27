@@ -1,4 +1,3 @@
-mod blockchain;
 mod services;
 use dotenv::dotenv;
 use ethers::prelude::*;
