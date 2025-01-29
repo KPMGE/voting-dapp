@@ -21,7 +21,6 @@ contract Turing is ERC20 {
     constructor() ERC20("Turing", "TRC"){
         deployer = msg.sender;
 
-        _addAuthorizedUser("nome1", 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266);
         _addAuthorizedUser("nome2", 0x70997970C51812dc3A010C7d01b50e0d17dc79C8);
         _addAuthorizedUser("nome3", 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC);
         _addAuthorizedUser("nome4", 0x90F79bf6EB2c4f870365E785982E1f101E93b906);
@@ -75,15 +74,6 @@ contract Turing is ERC20 {
         nameAuthorizedUsersMap[accountCode] = User(user, 0, currentIdxAccounts);
         addrAuthorizedUsersMap[user] = User(user, 0, currentIdxAccounts);
         currentIdxAccounts += 1;
-    }
-
-    function _findKeyIndex(string[] storage keys, string memory key) internal view returns (int256) {
-        for (uint256 i = 0; i < keys.length; i++) {
-            if (keccak256(abi.encodePacked(keys[i])) == keccak256(abi.encodePacked(key))) {
-                return int256(i);
-            }
-        }
-        return -1;
     }
 
     modifier onlyTeacherOrOwner() {

@@ -14,13 +14,9 @@ struct IssueTokenBody {
 
 #[post("/issue_token")]
 pub async fn issue_token(state: web::Data<State>, data: web::Json<IssueTokenBody>) -> impl Responder {
-    println!("{}", data.account_code);
-    println!("{}", data.amount);
-
     let amount = U256::from(data.amount);
     let code = data.account_code.clone();
     state.contract.issue_token(code, amount).send().await.expect("error when calling issue token");
-
     HttpResponse::Ok().finish()
 }
 
@@ -30,11 +26,13 @@ pub async fn vote() -> impl Responder {
 }
 
 #[get("/voting_on")]
-pub async fn voting_on() -> impl Responder {
+pub async fn voting_on(state: web::Data<State>) -> impl Responder {
+    state.contract.voting_on().send().await.expect("error when calling voting_on");
     HttpResponse::Ok().finish()
 }
 
 #[get("/voting_off")]
-pub async fn voting_off() -> impl Responder {
+pub async fn voting_off(state: web::Data<State>) -> impl Responder {
+    state.contract.voting_off().send().await.expect("error when calling voting_on");
     HttpResponse::Ok().finish()
 }
