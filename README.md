@@ -1,3 +1,3 @@
-# Voting dapp rs
+# Voting dapp
 
-This is a simple dapp voting system made with rust and solidity
+This is a simple dapp voting system made with solidity and nextjs
