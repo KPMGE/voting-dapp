@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 export function WalletButton() {
   const [address, setAddress] = useState<string>("")
@@ -21,6 +21,10 @@ export function WalletButton() {
     }
     setIsConnecting(false)
   }
+
+  useEffect(() => {
+    connectWallet()
+  }, [])
 
   return (
     <Button

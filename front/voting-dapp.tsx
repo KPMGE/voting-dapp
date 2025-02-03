@@ -21,12 +21,12 @@ interface Candidate {
 }
 
 export default function VotingDapp() {
-  const [isWalletConnected, setIsWalletConnected] = useState(true)
+  const [isWalletConnected, setIsWalletConnected] = useState(false)
   const [votingId, setVotingId] = useState<number | null>(null)
   const [candidates, setCandidates] = useState<Candidate[]>([])
 
   async function setupListener() {
-    const signer = await connectWallet();
+    const signer = await connectWallet((res) => setIsWalletConnected(res));
     if (!signer) return;
     const contract = await getContract(signer);
     console.log("Listening to vote events...");
@@ -132,6 +132,8 @@ export default function VotingDapp() {
     setVotingId(null)
   }
 
+  if (!isWalletConnected) return null
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Toaster />
@@ -195,13 +197,18 @@ export async function getContract(signer: ethers.Signer) {
   const json = await res.json();
   return new ethers.Contract(CONTRACT_ADDRESS, json.abi, signer);
 }
-export async function connectWallet() {
-  if (window.ethereum == 'undefined') {
+
+export async function connectWallet(setConnection?: (conn: boolean) => void) {
+  if (!window.ethereum) {
     toast({
       variant: "destructive",
       title: "Cannot connect to metamask",
       description: "Please connect your wallet first",
     })
+
+    if (setConnection) 
+      setConnection(false)
+
     return null;
   }
 
@@ -212,6 +219,10 @@ export async function connectWallet() {
     // TODO: remove, config for hardhat
    // const provider = new ethers.JsonRpcProvider(HARDHAT_LOCAL_ADDR);
     const signer = await provider.getSigner();
+
+    if (setConnection) 
+      setConnection(true)
+
     return signer;
   } catch (error) {
     console.error("Wallet connection failed:", error);
@@ -221,6 +232,10 @@ export async function connectWallet() {
       title: "Error",
       description: "Cannot connect to wallet, try again",
     })
+
+    if (setConnection) 
+      setConnection(false)
+
     return null;
   }
 }
