@@ -2,6 +2,19 @@
 
 import { ethers } from "ethers";
 import { useEffect } from "react";
+import { Lock, Unlock } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 import { useState } from "react"
 import { CandidateCard } from "./components/candidate-card"
@@ -10,7 +23,9 @@ import { WalletButton } from "./components/wallet-button"
 import { Toaster } from "./components/error-toast";
 import { toast } from "./components/ui/use-toast";
 
-const CONTRACT_ADDRESS = "0x29C84aBE989585E14D8150350c7a9B055bD10bFA";
+const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const PRIVATE_KEY =  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+const HARDHAT_LOCAL_ADDR = "http://127.0.0.1:8545"
 
 interface Candidate {
   id: number
@@ -23,6 +38,7 @@ interface Candidate {
 export default function VotingDapp() {
   const [isWalletConnected, setIsWalletConnected] = useState(false)
   const [votingId, setVotingId] = useState<number | null>(null)
+  const [isVotingEnabled, setIsVotingEnabled] = useState(true)
   const [candidates, setCandidates] = useState<Candidate[]>([])
 
   async function setupListener() {
@@ -53,6 +69,21 @@ export default function VotingDapp() {
 
       setCandidates(updatedCandidates)
     });
+  }
+
+  const handleToggleVoting = async () => {
+    if (isVotingEnabled) {
+      await votingOff()
+    } else {
+      await votingOn()
+    }
+
+    setIsVotingEnabled((prev) => !prev)
+    toast({
+      title: isVotingEnabled ? "Voting Disabled" : "Voting Enabled",
+      description: isVotingEnabled ? "The voting system has been disabled" : "The voting system has been enabled",
+      variant: isVotingEnabled ? "destructive" : "default",
+    })
   }
 
   useEffect(() => {
@@ -142,7 +173,13 @@ export default function VotingDapp() {
         <div className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold">DApp Voting System</h1>
-            <WalletButton />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <VotingStateButton 
+                handleToggleVoting={handleToggleVoting}
+                isVotingEnabled={isVotingEnabled}
+              />
+              <WalletButton />
+            </div>
           </div>
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -155,7 +192,7 @@ export default function VotingDapp() {
                 rank={candidate.rank}
                 onVote={(amount) => handleVote(candidate, amount)}
                 isVoting={votingId === candidate.id}
-                voted={candidate.voted}
+                enabled={candidate.voted && isVotingEnabled}
                 isWalletConnected={isWalletConnected}
               />
             ))}
@@ -172,7 +209,7 @@ export default function VotingDapp() {
                     votes={candidate.votes}
                     totalVotes={totalVotes}
                     rank={candidate.rank}
-                    voted={candidate.voted}
+                    enabled={candidate.voted && isVotingEnabled}
                     onVote={(amount) => handleVote(candidate, amount)}
                     isVoting={votingId === candidate.id}
                     isWalletConnected={isWalletConnected}
@@ -213,11 +250,11 @@ export async function connectWallet(setConnection?: (conn: boolean) => void) {
   }
 
   try {
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    await window.ethereum.request({ method: "eth_requestAccounts" });
+    // const provider = new ethers.BrowserProvider(window.ethereum);
+    // await window.ethereum.request({ method: "eth_requestAccounts" });
 
     // TODO: remove, config for hardhat
-   // const provider = new ethers.JsonRpcProvider(HARDHAT_LOCAL_ADDR);
+   const provider = new ethers.JsonRpcProvider(HARDHAT_LOCAL_ADDR);
     const signer = await provider.getSigner();
 
     if (setConnection) 
@@ -258,6 +295,23 @@ async function getPastVotes() {
   return votes;
 }
 
+async function votingOff() {
+  const signer = await connectWallet();
+  if (!signer) return;
+  const contract = await getContract(signer);
+
+  const tx = await contract.votingOff();
+  await tx.wait();
+}
+
+async function votingOn() {
+  const signer = await connectWallet();
+  if (!signer) return;
+  const contract = await getContract(signer);
+
+  const tx = await contract.votingOn();
+  await tx.wait();
+}
 
 async function vote(name: string, amount: BigInt) {
   const signer = await connectWallet();
@@ -286,4 +340,48 @@ async function getAllCandidates() {
   }))
 
   return mapped
+}
+
+type VotingStateButtonProps = {
+  isVotingEnabled: boolean,
+  handleToggleVoting: () => void
+}
+
+function VotingStateButton({ isVotingEnabled, handleToggleVoting }: VotingStateButtonProps) {
+  return (
+
+  <AlertDialog>
+    <AlertDialogTrigger asChild>
+      <Button variant={isVotingEnabled ? "outline" : "destructive"} className="gap-2">
+        {isVotingEnabled ? (
+          <>
+            <Unlock className="h-4 w-4" />
+            Voting Enabled
+          </>
+        ) : (
+          <>
+            <Lock className="h-4 w-4" />
+            Voting Disabled
+          </>
+        )}
+      </Button>
+    </AlertDialogTrigger>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{isVotingEnabled ? "Disable Voting System?" : "Enable Voting System?"}</AlertDialogTitle>
+        <AlertDialogDescription>
+          {isVotingEnabled
+            ? "This will prevent all users from submitting new votes. Existing votes will be preserved."
+            : "This will allow users to submit votes again."}
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction onClick={handleToggleVoting} variant={isVotingEnabled ? "destructive" : "default"}>
+          {isVotingEnabled ? "Disable Voting" : "Enable Voting"}
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+  )
 }

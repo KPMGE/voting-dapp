@@ -13,7 +13,7 @@ interface CandidateCardProps {
   onVote: (amount: number) => void
   isVoting: boolean
   isWalletConnected: boolean
-  voted: boolean
+  enabled: boolean
 }
 
 export function CandidateCard({
@@ -24,7 +24,7 @@ export function CandidateCard({
   onVote,
   isVoting,
   isWalletConnected,
-  voted
+  enabled
 }: CandidateCardProps) {
   const [voteAmount, setVoteAmount] = useState<string>("1")
   const votePercentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0
@@ -71,7 +71,7 @@ export function CandidateCard({
           />
           <Button
             onClick={handleVote}
-            disabled={voted || !isWalletConnected || isVoting || Number.parseFloat(voteAmount) <= 0}
+            disabled={!enabled || !isWalletConnected || isVoting || Number.parseFloat(voteAmount) <= 0}
             className="w-2/3"
           >
             {isVoting ? "Voting..." : "Vote"}
