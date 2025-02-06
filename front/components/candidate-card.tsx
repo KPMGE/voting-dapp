@@ -3,6 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Crown, Trophy, Coins } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
 import { useState } from "react"
 
 interface CandidateCardProps {
@@ -81,14 +82,21 @@ export function CandidateCard({
               value={voteAmount}
               onChange={(e) => setVoteAmount(e.target.value)}
               placeholder="Amount"
+              disabled={!enabled}
               className="w-1/3"
             />
             <Button
               onClick={handleVote}
               disabled={!enabled || !isWalletConnected || isVoting || Number.parseFloat(voteAmount) <= 0}
-              className="w-2/3"
+              className="w-2/3 relative"
+              variant={!enabled ? "secondary" : "default"}
             >
-              {isVoting ? "Voting..." : "Vote"}
+              {isVoting ? null : "Vote"}
+
+              { isVoting && (
+                <Spinner className="h-4 w-4 mr-2" />
+              )}
+
             </Button>
           </div>
         )} 

@@ -22,8 +22,9 @@ import { Rankings } from "./components/rankings"
 import { WalletButton } from "./components/wallet-button"
 import { Toaster } from "./components/error-toast";
 import { toast } from "./components/ui/use-toast";
+import { Spinner } from "./components/ui/spinner";
 
-const CONTRACT_ADDRESS = "0x8117a26f2ae6b3Fd7D202d7C4653865Ad27D8e4B";
+const CONTRACT_ADDRESS = "0x9E392C41e7f8FC7C157F83092b5eC3154A9ECC5F";
 
 // TODO: remove config for hardhat
 // const PRIVATE_KEY =  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
@@ -39,10 +40,11 @@ interface Candidate {
 
 export default function VotingDapp() {
   const [isWalletConnected, setIsWalletConnected] = useState(false)
-  const [votingId, setVotingId] = useState<number | null>(null)
+  const [votingCardIdx, setVotingCardIdx] = useState<number | null>(null)
   const [isVotingEnabled, setIsVotingEnabled] = useState(true)
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [isTeacherOrDeployer, setIsTeacherOrDeployer] = useState<boolean>(false)
+  const [isTogglingVoting, setIsTogglingVoting] = useState<boolean>(false)
 
   useEffect(() => {
     async function sync() {
@@ -54,10 +56,9 @@ export default function VotingDapp() {
       ])
 
       if (teacherAddress === loggedUserAddr || deployerAddr === loggedUserAddr) {
-        setIsTeacherOrDeployer(true)
+        // setIsTeacherOrDeployr(true)
       }
 
-      console.log({ votingState })
       setIsVotingEnabled(votingState)
     }
 
@@ -96,6 +97,8 @@ export default function VotingDapp() {
   }
 
   const handleToggleVoting = async () => {
+    setIsTogglingVoting(true)
+
     if (isVotingEnabled) {
       await votingOff()
     } else {
@@ -103,8 +106,9 @@ export default function VotingDapp() {
     }
 
     const votingState = await getVotingState()
-    console.log({ votingState })
     setIsVotingEnabled(votingState)
+    setIsTogglingVoting(false)
+
     toast({
       title: isVotingEnabled ? "Voting Disabled" : "Voting Enabled",
       description: isVotingEnabled ? "The voting system has been disabled" : "The voting system has been enabled",
@@ -177,8 +181,9 @@ export default function VotingDapp() {
     )
   }
 
-  const handleVote = async (candidate: Candidate, amount: number) => {
+  const handleVote = async (candidate: Candidate, amount: number, idx: number) => {
     const { id: candidateId, name } = candidate
+    setVotingCardIdx(idx)
 
     if (amount > 2) {
       toast({
@@ -190,10 +195,10 @@ export default function VotingDapp() {
     }
 
     const amountTuring = amount * 1e18
-    setVotingId(candidateId)
 
     try {
-      vote(name, BigInt(amountTuring))
+      await vote(name, BigInt(amountTuring))
+      setVotingCardIdx(null)
     } catch (ex) {
       toast({
         variant: "destructive",
@@ -208,7 +213,7 @@ export default function VotingDapp() {
       description: `Successfully voted on ${name}`,
     })
 
-    setVotingId(null)
+    setVotingCardIdx(null)
   }
 
   if (!isWalletConnected) return null
@@ -226,6 +231,7 @@ export default function VotingDapp() {
                 <VotingStateButton
                   handleToggleVoting={handleToggleVoting}
                   isVotingEnabled={isVotingEnabled}
+                  isTogglingVoting={isTogglingVoting}
                 />
               )}
               <WalletButton />
@@ -233,15 +239,15 @@ export default function VotingDapp() {
           </div>
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {candidates.slice(0, 3).map((candidate) => (
+            {candidates.slice(0, 3).map((candidate, idx) => (
               <CandidateCard
                 key={candidate.id}
                 name={candidate.name}
                 votes={candidate.votes}
                 totalVotes={totalVotes}
                 rank={candidate.rank}
-                onVote={(amount) => handleVote(candidate, amount)}
-                isVoting={votingId === candidate.id}
+                onVote={(amount) => handleVote(candidate, amount, idx)}
+                isVoting={votingCardIdx == idx}
                 enabled={!candidate.voted && isVotingEnabled}
                 isTeacherOrDeployer={isTeacherOrDeployer}
                 onIssueToken={(amount) => handleIssueToken(candidate, amount)}
@@ -254,7 +260,7 @@ export default function VotingDapp() {
             <div>
               <h2 className="mb-4 text-2xl font-bold">Other Candidates</h2>
               <div className="grid gap-4">
-                {candidates.slice(3).map((candidate) => (
+                {candidates.slice(3).map((candidate, idx) => (
                   <CandidateCard
                     key={candidate.id}
                     name={candidate.name}
@@ -262,8 +268,8 @@ export default function VotingDapp() {
                     totalVotes={totalVotes}
                     rank={candidate.rank}
                     enabled={!candidate.voted && isVotingEnabled}
-                    onVote={(amount) => handleVote(candidate, amount)}
-                    isVoting={votingId === candidate.id}
+                    onVote={(amount) => handleVote(candidate, amount, idx)}
+                    isVoting={votingCardIdx == idx}
                     isWalletConnected={isWalletConnected}
                     isTeacherOrDeployer={isTeacherOrDeployer}
                     onIssueToken={(amount) => handleIssueToken(candidate, amount)}
@@ -297,7 +303,7 @@ export async function connectWallet(setConnection?: (conn: boolean) => void) {
       description: "Please connect your wallet first",
     })
 
-    if (setConnection) 
+    if (setConnection)
       setConnection(false)
 
     return null;
@@ -311,7 +317,7 @@ export async function connectWallet(setConnection?: (conn: boolean) => void) {
     // const provider = new ethers.JsonRpcProvider(HARDHAT_LOCAL_ADDR);
     const signer = await provider.getSigner();
 
-    if (setConnection) 
+    if (setConnection)
       setConnection(true)
 
     return signer;
@@ -324,7 +330,7 @@ export async function connectWallet(setConnection?: (conn: boolean) => void) {
       description: "Cannot connect to wallet, try again",
     })
 
-    if (setConnection) 
+    if (setConnection)
       setConnection(false)
 
     return null;
@@ -434,44 +440,62 @@ async function getAllCandidates() {
 
 type VotingStateButtonProps = {
   isVotingEnabled: boolean,
-  handleToggleVoting: () => void
+  handleToggleVoting: () => void,
+  isTogglingVoting?: boolean
 }
 
-function VotingStateButton({ isVotingEnabled, handleToggleVoting }: VotingStateButtonProps) {
+function VotingStateButton({ isVotingEnabled, handleToggleVoting, isTogglingVoting }: VotingStateButtonProps) {
   return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant={isVotingEnabled ? "outline" : "destructive"} className="gap-2">
+          {isVotingEnabled ? (
+            <>
+              <Unlock className="h-4 w-4" />
+              Voting Enabled
+            </>
+          ) : (
+            <>
+              {isTogglingVoting ? (
+                <Spinner className="h-4 w-4 mr-2" />
+              ) : (
+                <Lock className="h-4 w-4" />
+              )}
+              Voting Disabled
+            </>
+          )}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{isVotingEnabled ? "Disable Voting System?" : "Enable Voting System?"}</AlertDialogTitle>
 
-  <AlertDialog>
-    <AlertDialogTrigger asChild>
-      <Button variant={isVotingEnabled ? "outline" : "destructive"} className="gap-2">
-        {isVotingEnabled ? (
-          <>
-            <Unlock className="h-4 w-4" />
-            Voting Enabled
-          </>
-        ) : (
-          <>
-            <Lock className="h-4 w-4" />
-            Voting Disabled
-          </>
-        )}
-      </Button>
-    </AlertDialogTrigger>
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>{isVotingEnabled ? "Disable Voting System?" : "Enable Voting System?"}</AlertDialogTitle>
-        <AlertDialogDescription>
-          {isVotingEnabled
-            ? "This will prevent all users from submitting new votes. Existing votes will be preserved."
-            : "This will allow users to submit votes again."}
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>Cancel</AlertDialogCancel>
-        <AlertDialogAction onClick={handleToggleVoting} variant={isVotingEnabled ? "destructive" : "default"}>
-          {isVotingEnabled ? "Disable Voting" : "Enable Voting"}
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+          <AlertDialogDescription>
+            {isVotingEnabled
+              ? "This will prevent all users from submitting new votes. Existing votes will be preserved."
+              : "This will allow users to submit votes again."}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleToggleVoting}
+            variant={isVotingEnabled ? "destructive" : "default"}
+            disabled={isTogglingVoting}
+          >
+            {isTogglingVoting ? (
+              <>
+                <Spinner className="h-4 w-4 mr-2" />
+                {isVotingEnabled ? "Disabling..." : "Enabling..."}
+              </>
+            ) : isVotingEnabled ? (
+              "Disable Voting"
+            ) : (
+              "Enable Voting"
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
