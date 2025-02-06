@@ -40,6 +40,27 @@ export default function VotingDapp() {
   const [votingId, setVotingId] = useState<number | null>(null)
   const [isVotingEnabled, setIsVotingEnabled] = useState(true)
   const [candidates, setCandidates] = useState<Candidate[]>([])
+  const [isTeacher, setIsTeacher] = useState<boolean>(false)
+
+  useEffect(() => {
+    async function sync() {
+      const [teacherAddress, loggedUserAddr, votingState] = await Promise.all([
+        getTeacherAddress(),
+        getLoggedUserAddress(),
+        getVotingState()
+      ])
+
+      if (teacherAddress === loggedUserAddr) {
+        setIsTeacher(true)
+      }
+
+      console.log({ votingState })
+      setIsVotingEnabled(votingState)
+    }
+
+    sync()
+  }, [])
+
 
   async function setupListener() {
     const signer = await connectWallet((res) => setIsWalletConnected(res));
@@ -78,7 +99,9 @@ export default function VotingDapp() {
       await votingOn()
     }
 
-    setIsVotingEnabled((prev) => !prev)
+    const votingState = await getVotingState()
+    console.log({ votingState })
+    setIsVotingEnabled(votingState)
     toast({
       title: isVotingEnabled ? "Voting Disabled" : "Voting Enabled",
       description: isVotingEnabled ? "The voting system has been disabled" : "The voting system has been enabled",
@@ -174,10 +197,12 @@ export default function VotingDapp() {
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold">DApp Voting System</h1>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <VotingStateButton 
-                handleToggleVoting={handleToggleVoting}
-                isVotingEnabled={isVotingEnabled}
-              />
+              {isTeacher && (
+                <VotingStateButton
+                  handleToggleVoting={handleToggleVoting}
+                  isVotingEnabled={isVotingEnabled}
+                />
+              )}
               <WalletButton />
             </div>
           </div>
@@ -192,7 +217,7 @@ export default function VotingDapp() {
                 rank={candidate.rank}
                 onVote={(amount) => handleVote(candidate, amount)}
                 isVoting={votingId === candidate.id}
-                enabled={candidate.voted && isVotingEnabled}
+                enabled={!candidate.voted && isVotingEnabled}
                 isWalletConnected={isWalletConnected}
               />
             ))}
@@ -209,7 +234,7 @@ export default function VotingDapp() {
                     votes={candidate.votes}
                     totalVotes={totalVotes}
                     rank={candidate.rank}
-                    enabled={candidate.voted && isVotingEnabled}
+                    enabled={!candidate.voted && isVotingEnabled}
                     onVote={(amount) => handleVote(candidate, amount)}
                     isVoting={votingId === candidate.id}
                     isWalletConnected={isWalletConnected}
@@ -282,8 +307,6 @@ async function getPastVotes() {
   if (!signer) return;
   const contract = await getContract(signer);
 
-
-
   const filter = contract.filters.OnVote();
   const events = await contract.queryFilter(filter);
 
@@ -304,6 +327,20 @@ async function votingOff() {
   await tx.wait();
 }
 
+async function getTeacherAddress(): Promise<string> {
+  const signer = await connectWallet();
+  if (!signer) return ""
+  const contract = await getContract(signer);
+
+  return await contract.teacherAddress();
+}
+
+async function getLoggedUserAddress(): Promise<string> {
+  const signer = await connectWallet();
+  if (!signer) return ""
+  return signer.getAddress()
+}
+
 async function votingOn() {
   const signer = await connectWallet();
   if (!signer) return;
@@ -311,6 +348,14 @@ async function votingOn() {
 
   const tx = await contract.votingOn();
   await tx.wait();
+}
+
+async function getVotingState() {
+  const signer = await connectWallet();
+  if (!signer) return;
+  const contract = await getContract(signer);
+
+  return contract.votingActive();
 }
 
 async function vote(name: string, amount: BigInt) {

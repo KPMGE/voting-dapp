@@ -15,7 +15,7 @@ contract Turing is ERC20 {
     }
 
     address private deployer;
-    address private teacherAddress = 0x502542668aF09fa7aea52174b9965A7799343Df7;
+    address public teacherAddress = 0x502542668aF09fa7aea52174b9965A7799343Df7;
     mapping(string => User) private nameAuthorizedUsersMap;
     mapping(address => User) private addrAuthorizedUsersMap;
     string[] authorizedUsersList;
@@ -32,6 +32,19 @@ contract Turing is ERC20 {
         _addAuthorizedUser("nome3", 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC);
         _addAuthorizedUser("nome4", 0x90F79bf6EB2c4f870365E785982E1f101E93b906);
         _addAuthorizedUser("nome5", 0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65);
+        _addAuthorizedUser("Account #9", 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720);
+
+        _addAuthorizedUser("Account #10", 0xBcd4042DE499D14e55001CcbB24a551F3b954096);
+        _addAuthorizedUser("Account #11", 0x71bE63f3384f5fb98995898A86B02Fb2426c5788);
+        _addAuthorizedUser("Account #12", 0xFABB0ac9d68B0B445fB7357272Ff202C5651694a);
+        _addAuthorizedUser("Account #13", 0x1CBd3b2770909D4e10f157cABC84C7264073C9Ec);
+        _addAuthorizedUser("Account #14", 0xdF3e18d64BC6A983f673Ab319CCaE4f1a57C7097);
+        _addAuthorizedUser("Account #15", 0xcd3B766CCDd6AE721141F452C550Ca635964ce71);
+        _addAuthorizedUser("Account #16", 0x2546BcD3c84621e976D8185a91A922aE77ECEc30);
+        _addAuthorizedUser("Account #17", 0xbDA5747bFD65F08deb54cb465eB87D40e51B197E);
+        _addAuthorizedUser("Account #18", 0xdD2FD4581271e230360230F9337D5c0430Bf44C0);
+        _addAuthorizedUser("Account #19", 0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199);
+
     }
 
      function getAllAuthorizedUsers() public view returns (string[] memory) {
