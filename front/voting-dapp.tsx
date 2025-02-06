@@ -55,7 +55,7 @@ export default function VotingDapp() {
       ])
 
       if (teacherAddress === loggedUserAddr || deployerAddr === loggedUserAddr) {
-        // setIsTeacherOrDeployr(true)
+        setIsTeacherOrDeployer(true)
       }
 
       setIsVotingEnabled(votingState)
