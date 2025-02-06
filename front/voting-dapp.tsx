@@ -23,8 +23,7 @@ import { WalletButton } from "./components/wallet-button"
 import { Toaster } from "./components/error-toast";
 import { toast } from "./components/ui/use-toast";
 import { Spinner } from "./components/ui/spinner";
-
-const CONTRACT_ADDRESS = "0x9E392C41e7f8FC7C157F83092b5eC3154A9ECC5F";
+import process from "process";
 
 // TODO: remove config for hardhat
 // const PRIVATE_KEY =  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
@@ -292,7 +291,7 @@ export default function VotingDapp() {
 export async function getContract(signer: ethers.Signer) {
   const res = await fetch("/abi/Turing.json");
   const json = await res.json();
-  return new ethers.Contract(CONTRACT_ADDRESS, json.abi, signer);
+  return new ethers.Contract(process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string, json.abi, signer);
 }
 
 export async function connectWallet(setConnection?: (conn: boolean) => void) {
