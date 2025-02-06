@@ -58,6 +58,7 @@ contract Turing is ERC20 {
     function issueToken(string memory name, uint256 amount) public onlyTeacherOrOwner {
         require(nameAuthorizedUsersMap[name].addr != address(0), "Turing: Account code not found!");
         _mint(nameAuthorizedUsersMap[name].addr, amount);
+        emit OnVote(name, amount);
     }
 
     function vote(string memory name, uint256 amount) public {

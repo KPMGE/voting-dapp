@@ -24,8 +24,9 @@ import { Toaster } from "./components/error-toast";
 import { toast } from "./components/ui/use-toast";
 
 const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-const PRIVATE_KEY =  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-const HARDHAT_LOCAL_ADDR = "http://127.0.0.1:8545"
+// TODO: remove, hardhat config
+// const PRIVATE_KEY =  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+// const HARDHAT_LOCAL_ADDR = "http://127.0.0.1:8545"
 
 interface Candidate {
   id: number
@@ -140,6 +141,40 @@ export default function VotingDapp() {
 
   const totalVotes = candidates?.reduce((sum, candidate) => sum + candidate.votes, 0) ?? 0
 
+  const handleIssueToken = async (candidate: Candidate, amount: number) => {
+    const { id: candidateId, name } = candidate
+    const amountTuring = amount * 1e18
+
+    try {
+      issueToken(name, BigInt(amountTuring))
+    } catch (ex) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error while issuing token, try again",
+      })
+      return
+    }
+
+    toast({
+      title: "Turing",
+      description: `Successfully issued token to ${name}`,
+    })
+
+    setCandidates((prev) =>
+      prev
+        .map((c) => {
+          if (c.id === candidateId) {
+            const convertedAmount = parseFloat(ethers.formatEther(String(amountTuring)))
+            return { ...c, votes: c.votes + convertedAmount, voted: true }
+          }
+          return c
+        })
+        .sort((a, b) => b.votes - a.votes)
+        .map((c, index) => ({ ...c, rank: index + 1 })),
+    )
+  }
+
   const handleVote = async (candidate: Candidate, amount: number) => {
     const { id: candidateId, name } = candidate
 
@@ -171,18 +206,6 @@ export default function VotingDapp() {
       description: `Successfully voted on ${name}`,
     })
 
-    setCandidates((prev) =>
-      prev
-        .map((c) => {
-          if (c.id === candidateId) {
-            const convertedAmount = parseFloat(ethers.formatEther(String(amountTuring)))
-            return { ...c, votes: c.votes + convertedAmount, voted: true }
-          }
-          return c
-        })
-        .sort((a, b) => b.votes - a.votes)
-        .map((c, index) => ({ ...c, rank: index + 1 })),
-    )
     setVotingId(null)
   }
 
@@ -218,6 +241,8 @@ export default function VotingDapp() {
                 onVote={(amount) => handleVote(candidate, amount)}
                 isVoting={votingId === candidate.id}
                 enabled={!candidate.voted && isVotingEnabled}
+                isTeacher={isTeacher}
+                onIssueToken={(amount) => handleIssueToken(candidate, amount)}
                 isWalletConnected={isWalletConnected}
               />
             ))}
@@ -238,6 +263,8 @@ export default function VotingDapp() {
                     onVote={(amount) => handleVote(candidate, amount)}
                     isVoting={votingId === candidate.id}
                     isWalletConnected={isWalletConnected}
+                    isTeacher={isTeacher}
+                    onIssueToken={(amount) => handleIssueToken(candidate, amount)}
                   />
                 ))}
               </div>
@@ -275,11 +302,10 @@ export async function connectWallet(setConnection?: (conn: boolean) => void) {
   }
 
   try {
-    // const provider = new ethers.BrowserProvider(window.ethereum);
-    // await window.ethereum.request({ method: "eth_requestAccounts" });
+    const provider = new ethers.BrowserProvider(window.ethereum);
 
     // TODO: remove, config for hardhat
-   const provider = new ethers.JsonRpcProvider(HARDHAT_LOCAL_ADDR);
+    // const provider = new ethers.JsonRpcProvider(HARDHAT_LOCAL_ADDR);
     const signer = await provider.getSigner();
 
     if (setConnection) 
@@ -367,6 +393,14 @@ async function vote(name: string, amount: BigInt) {
   await tx.wait();
 }
 
+async function issueToken(name: string, amount: BigInt) {
+  const signer = await connectWallet();
+  if (!signer) return;
+  const contract = await getContract(signer);
+
+  const tx = await contract.issueToken(name, amount);
+  await tx.wait();
+}
 
 async function getAllCandidates() {
   const signer = await connectWallet();

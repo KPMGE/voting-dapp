@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Crown, Medal, Trophy } from "lucide-react"
+import { Coins, Crown, Medal, Trophy } from "lucide-react"
 
 interface Candidate {
   id: number
@@ -25,7 +25,7 @@ export function Rankings({ candidates }: RankingsProps) {
         return null
     }
   }
-
+  
   return (
     <div className="rounded-lg border">
       <Table>
@@ -34,6 +34,12 @@ export function Rankings({ candidates }: RankingsProps) {
             <TableHead className="w-12">Rank</TableHead>
             <TableHead>Name</TableHead>
             <TableHead className="text-right">Votes</TableHead>
+            <TableHead className="text-right w-24">
+              <span className="flex items-center justify-end gap-1">
+                <Coins className="h-4 w-4" />
+                Tokens
+              </span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -46,7 +52,8 @@ export function Rankings({ candidates }: RankingsProps) {
                 </div>
               </TableCell>
               <TableCell>{candidate.name}</TableCell>
-              <TableCell className="text-right">{candidate.votes}</TableCell>
+              <TableCell className="text-right">{candidate.votes.toFixed(2)}</TableCell>
+              <TableCell className="text-right">{candidate.votes * 1e18}</TableCell>
             </TableRow>
           ))}
         </TableBody>
