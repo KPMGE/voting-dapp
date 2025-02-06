@@ -23,8 +23,9 @@ import { WalletButton } from "./components/wallet-button"
 import { Toaster } from "./components/error-toast";
 import { toast } from "./components/ui/use-toast";
 
-const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-// TODO: remove, hardhat config
+const CONTRACT_ADDRESS = "0x8117a26f2ae6b3Fd7D202d7C4653865Ad27D8e4B";
+
+// TODO: remove config for hardhat
 // const PRIVATE_KEY =  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 // const HARDHAT_LOCAL_ADDR = "http://127.0.0.1:8545"
 
@@ -41,18 +42,19 @@ export default function VotingDapp() {
   const [votingId, setVotingId] = useState<number | null>(null)
   const [isVotingEnabled, setIsVotingEnabled] = useState(true)
   const [candidates, setCandidates] = useState<Candidate[]>([])
-  const [isTeacher, setIsTeacher] = useState<boolean>(false)
+  const [isTeacherOrDeployer, setIsTeacherOrDeployer] = useState<boolean>(false)
 
   useEffect(() => {
     async function sync() {
-      const [teacherAddress, loggedUserAddr, votingState] = await Promise.all([
+      const [teacherAddress, deployerAddr, loggedUserAddr, votingState] = await Promise.all([
         getTeacherAddress(),
+        getDeployerAddress(),
         getLoggedUserAddress(),
         getVotingState()
       ])
 
-      if (teacherAddress === loggedUserAddr) {
-        setIsTeacher(true)
+      if (teacherAddress === loggedUserAddr || deployerAddr === loggedUserAddr) {
+        setIsTeacherOrDeployer(true)
       }
 
       console.log({ votingState })
@@ -220,7 +222,7 @@ export default function VotingDapp() {
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold">DApp Voting System</h1>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              {isTeacher && (
+              {isTeacherOrDeployer && (
                 <VotingStateButton
                   handleToggleVoting={handleToggleVoting}
                   isVotingEnabled={isVotingEnabled}
@@ -241,7 +243,7 @@ export default function VotingDapp() {
                 onVote={(amount) => handleVote(candidate, amount)}
                 isVoting={votingId === candidate.id}
                 enabled={!candidate.voted && isVotingEnabled}
-                isTeacher={isTeacher}
+                isTeacherOrDeployer={isTeacherOrDeployer}
                 onIssueToken={(amount) => handleIssueToken(candidate, amount)}
                 isWalletConnected={isWalletConnected}
               />
@@ -263,7 +265,7 @@ export default function VotingDapp() {
                     onVote={(amount) => handleVote(candidate, amount)}
                     isVoting={votingId === candidate.id}
                     isWalletConnected={isWalletConnected}
-                    isTeacher={isTeacher}
+                    isTeacherOrDeployer={isTeacherOrDeployer}
                     onIssueToken={(amount) => handleIssueToken(candidate, amount)}
                   />
                 ))}
@@ -303,6 +305,7 @@ export async function connectWallet(setConnection?: (conn: boolean) => void) {
 
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
+    await window.ethereum.request({ method: "eth_requestAccounts" });
 
     // TODO: remove, config for hardhat
     // const provider = new ethers.JsonRpcProvider(HARDHAT_LOCAL_ADDR);
@@ -359,6 +362,14 @@ async function getTeacherAddress(): Promise<string> {
   const contract = await getContract(signer);
 
   return await contract.teacherAddress();
+}
+
+async function getDeployerAddress(): Promise<string> {
+  const signer = await connectWallet();
+  if (!signer) return ""
+  const contract = await getContract(signer);
+
+  return await contract.deployer();
 }
 
 async function getLoggedUserAddress(): Promise<string> {

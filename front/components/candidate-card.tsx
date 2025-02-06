@@ -15,7 +15,7 @@ interface CandidateCardProps {
   isVoting: boolean
   isWalletConnected: boolean
   enabled: boolean,
-  isTeacher: boolean
+  isTeacherOrDeployer: boolean
 }
 
 export function CandidateCard({
@@ -28,7 +28,7 @@ export function CandidateCard({
   isVoting,
   isWalletConnected,
   enabled,
-  isTeacher
+  isTeacherOrDeployer: isTeacher
 }: CandidateCardProps) {
   const [voteAmount, setVoteAmount] = useState<string>("1")
   const [tokenAmount, setTokenAmount] = useState<string>("1")

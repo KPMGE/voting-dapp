@@ -14,7 +14,7 @@ contract Turing is ERC20 {
         string name;
     }
 
-    address private deployer;
+    address public deployer;
     address public teacherAddress = 0x502542668aF09fa7aea52174b9965A7799343Df7;
     mapping(string => User) private nameAuthorizedUsersMap;
     mapping(address => User) private addrAuthorizedUsersMap;
